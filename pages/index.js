@@ -1,17 +1,24 @@
-import { useSocket } from '@/context/socket';
-import { useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
-  const socket = useSocket()
+  const router = useRouter()
 
-  useEffect(() => {
-    socket?.on("connect", () => {
-      console.log(socket.id);
-    });
-  }, [socket])
+  const createAndJoin = () => {
+    const roomId = uuidv4()
+    router.push(`/${roomId}`)
+  }
   return (
     <main>
-      Hello
+      <div>
+        <h1>Meeting</h1>
+        <div>
+          <input />
+          <button>Join Meeting</button>
+        </div>
+        <span>-------------OR--------------</span>
+        <button>Create Meeting</button>
+      </div>
     </main>
   )
 }
