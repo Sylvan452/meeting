@@ -5,6 +5,7 @@ import useMediaStream from '@/hooks/useMediaStream';
 import usePlayer from '@/hooks/usePlayer';
 import Player from '@/components/Player';
 
+
 const Room = () => {
     const socket = useSocket();
     const { peer, myId } = usePeer();
@@ -13,7 +14,6 @@ const Room = () => {
 
 
     useEffect(() => {
-        console.log('see me')
         if (!socket || !peer || !stream) return;
         const handleUserConnected = (newUser) => {
             console.log(`user connected in room with userid ${newUser}`)
