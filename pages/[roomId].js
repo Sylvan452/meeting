@@ -1,14 +1,15 @@
 import { useSocket } from '@/context/socket';
 import { cloneDeep } from 'lodash';
 import usePeer from '@/hooks/usePeer';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useMediaStream from '@/hooks/useMediaStream';
 import usePlayer from '@/hooks/usePlayer';
 import Player from '@/components/Player';
 import Bottom from '@/components/Bottom';
 
-import styles from '@/styles/room.module.css'
+import styles from '@/styles/room.module.css';
 import { useRouter } from 'next/router';
+import CopySection from '@/components/CopySection';
 
 
 const Room = () => {
@@ -16,8 +17,9 @@ const Room = () => {
     const { roomId } = useRouter().query;
     const { peer, myId } = usePeer();
     const { stream } = useMediaStream();
-    const { players, setPlayers, playerHighlighted, nonHighlightedPlayer, toggleAudio, toggleVideo } = usePlayer(myId, roomId);
+    const { players, setPlayers, playerHighlighted, nonHighlightedPlayer, toggleAudio, toggleVideo, leaveRoom } = usePlayer(myId, roomId, peer);
 
+    const [users, setUsers] = useState([])
 
     useEffect(() => {
         if (!socket || !peer || !stream) return;
@@ -35,6 +37,10 @@ const Room = () => {
                         muted: false,
                         playing: true
                     }
+                }));
+                setUsers((prev) => ({
+                    ...prev,
+                    [newUser]: call
                 }))
             })
 
@@ -66,14 +72,23 @@ const Room = () => {
                 return { ...copy };
             });
         };
-
+        const handleUserLeave = (userId) => {
+            console.log(`user with ${userId} leaves the meeting`)
+            users[userId]?.close()
+            const playerCopy = cloneDeep(players);
+            delete playerCopy[userId];
+            setPlayers(playerCopy);
+        }
         socket.on("user-toggle-audio", handleToggleAudio);
         socket.on("user-toggle-video", handleToggleVideo);
+        socket.on("user-leave", handleUserLeave);
         return () => {
             socket.off("user-toggle-audio", handleToggleAudio);
             socket.off("user-toggle-video", handleToggleVideo);
+            socket.off("user-leave", handleUserLeave);
+
         };
-    }, [setPlayers, socket]);
+    }, [setPlayers, socket, users]);
 
 
     useEffect(() => {
@@ -91,6 +106,11 @@ const Room = () => {
                         muted: false,
                         playing: true
                     }
+                }));
+
+                setUsers((prev) => ({
+                    ...prev,
+                    [callerId]: call
                 }))
             })
         })
@@ -127,7 +147,8 @@ const Room = () => {
 
                 })}
             </div>
-            <Bottom muted={playerHighlighted?.muted} playing={playerHighlighted?.playing} toggleAudio={toggleAudio} toggleVideo={toggleVideo} />
+            <CopySection roomId={roomId} />
+            <Bottom muted={playerHighlighted?.muted} playing={playerHighlighted?.playing} toggleAudio={toggleAudio} toggleVideo={toggleVideo} leaveRoom={leaveRoom} />
         </>
     )
 };
